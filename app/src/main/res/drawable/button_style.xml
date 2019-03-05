@@ -4,7 +4,7 @@
     <!--枠-->
     <stroke
         android:width="2dp"
-        android:color="#ffffff" />
+        android:color="#A9A9A9" />
     <!--角-->
     <corners android:radius="6dp" />
 
