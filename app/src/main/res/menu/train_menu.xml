@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/sinzyuku"
+        android:icon="@drawable/ic_arrow_upward_black_24dp"
+        android:title="方面 : 新宿方面"></item>
+    <item
+        android:id="@+id/hatiouzi"
+        android:icon="@drawable/ic_arrow_downward_black_24dp"
+        android:title="方面 : 京王八王子・高尾山口方面"></item>
+</menu>

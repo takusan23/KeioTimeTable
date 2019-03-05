@@ -1,13 +1,19 @@
 package io.github.takusan23.keiotimetable.Fragment;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v7.view.menu.MenuBuilder;
+import android.support.v7.view.menu.MenuPopupHelper;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,6 +26,7 @@ import io.github.takusan23.keiotimetable.R;
 public class StationListFragment extends Fragment {
 
     private ListView station_ListView;
+    private String url =  "https://keio.ekitan.com/pc/T5?dw=0&slCode=";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -32,6 +39,8 @@ public class StationListFragment extends Fragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         station_ListView = view.findViewById(R.id.station_list_listview);
 
+        getActivity().setTitle("駅一覧");
+
         //ListView
         ArrayList<ListItem> arrayList = new ArrayList<>();
         final ListAdapter adapter = new ListAdapter(getContext(), R.layout.listview_layout, arrayList);
@@ -42,7 +51,6 @@ public class StationListFragment extends Fragment {
         List<String> station_List = Arrays.asList(a);
         ArrayList<String> station_ArrayList = new ArrayList<String>(station_List);
 
-        String url = "";
         //for
         for (int i = 1; i < a.length; i++) {
             //Adapter用List
@@ -56,6 +64,7 @@ public class StationListFragment extends Fragment {
 
         // ListViewにArrayAdapter
         station_ListView.setAdapter(adapter);
+
 
 
     }

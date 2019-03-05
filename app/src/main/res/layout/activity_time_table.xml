@@ -3,9 +3,24 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context=".TimeTableActivity">
 
     <!-- TODO: Update blank fragment layout -->
+
+    <TextView
+        android:id="@+id/train_select_textview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/button_style"
+        android:drawableStart="@drawable/ic_arrow_upward_black_24dp"
+        android:gravity="center_vertical"
+        android:text="方面  : 新宿方面"
+        android:textSize="18sp" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="10dp" />
 
     <ScrollView
         android:layout_width="match_parent"

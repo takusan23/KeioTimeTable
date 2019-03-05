@@ -1,8 +1,14 @@
 package io.github.takusan23.keiotimetable;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.view.menu.MenuBuilder;
+import android.support.v7.view.menu.MenuPopupHelper;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 
 import org.jsoup.Jsoup;
@@ -11,22 +17,95 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.ArrayList;
+
+import io.github.takusan23.keiotimetable.Adapter.ListItem;
 
 public class TimeTableActivity extends AppCompatActivity {
 
     private TextView textView;
-    private String url;
+    private String up_url;
+    private TextView train;
 
     @Override
+    @SuppressLint("RestrictedApi")
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_time_table);
 
         textView = findViewById(R.id.test_tv);
+        train = findViewById(R.id.train_select_textview);
 
-        url = getIntent().getStringExtra("URL");
 
+        up_url = getIntent().getStringExtra("URL");
+
+        getHTMLAndPerse(up_url);
+
+
+        //ポップアップメニュー作成
+        final MenuBuilder menuBuilder = new MenuBuilder(TimeTableActivity.this);
+        MenuInflater inflater = new MenuInflater(TimeTableActivity.this);
+        inflater.inflate(R.menu.train_menu, menuBuilder);
+        final MenuPopupHelper optionsMenu = new MenuPopupHelper(TimeTableActivity.this, menuBuilder, train);
+        optionsMenu.setForceShowIcon(true);
+        // ポップアップメニューのメニュー項目のクリック処理
+        train.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // ポップアップメニューを表示
+                optionsMenu.show();
+                //反応
+                menuBuilder.setCallback(new MenuBuilder.Callback() {
+                    @Override
+                    public boolean onMenuItemSelected(MenuBuilder menuBuilder, MenuItem menuItem) {
+                        switch (menuItem.getItemId()) {
+                            case R.id.sinzyuku:
+                                train.setText("方面 :新宿方面");
+                                train.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(R.drawable.ic_arrow_upward_black_24dp, null), null, null, null);
+                                up_url = "https://keio.ekitan.com/pc/T5?dw=0&slCode=";
+                                getHTMLAndPerse(up_url);
+                                break;
+                            case R.id.hatiouzi:
+                                train.setText("方面 : 京王八王子・高尾山口方面");
+                                train.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(R.drawable.ic_arrow_downward_black_24dp, null), null, null, null);
+                                //最後変える
+                                getHTMLAndPerse(up_url.replace("d=1", "d=2"));
+                                break;
+                        }
+
+                        return false;
+                    }
+
+                    @Override
+                    public void onMenuModeChange(MenuBuilder menuBuilder) {
+
+                    }
+                });
+            }
+        });
+
+
+    }
+
+    private void setTitleUIThread(final String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                getSupportActionBar().setTitle(message);
+            }
+        });
+    }
+
+    private void getHTMLAndPerse(final String url) {
+        textView.setText("");
         setTitleUIThread("🚃🕗読み込み中");
+        //サブタイトル設定
+        if (url.contains("&d=1")) {
+            getSupportActionBar().setSubtitle("方面 : 新宿方面");
+        } else {
+            getSupportActionBar().setSubtitle("方面 : 京王八王子・高尾山口方面");
+        }
+
 
         //ネットワークは非同期処理
         new AsyncTask<Void, Void, Void>() {
@@ -86,14 +165,6 @@ public class TimeTableActivity extends AppCompatActivity {
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    private void setTitleUIThread(final String message) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                setTitle(message);
-            }
-        });
-    }
 }
 
 
