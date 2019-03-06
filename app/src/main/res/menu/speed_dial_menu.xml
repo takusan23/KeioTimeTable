@@ -1,0 +1,14 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/station_add_menu"
+        android:title="駅を登録する"></item>
+    <item
+        android:id="@+id/up_down_menu"
+        android:title="方面 : 新宿方面"></item>
+    <item
+        android:id="@+id/day_menu"
+        android:title="平日"></item>
+    <item
+        android:id="@+id/download_menu"
+        android:title=""></item>
+</menu>

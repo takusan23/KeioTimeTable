@@ -79,11 +79,10 @@ public class StationListFragment extends Fragment {
     //URL生成
     private String urlGenerator(int station_number) {
         //上り
-        String url = "https://keio.ekitan.com/pc/T5?dw=0&slCode=";
-        //下り
-        String down_url = "https://keio.ekitan.com/pc/T5?dw=1&slCode=";
+        String url = "https://keio.ekitan.com/pc/T5?slCode=";
 
-        String d = "&d=1";
+
+        String d = "&d=1&dw=0";
 
         //初台
         if (station_number == 2 || station_number == 3) {

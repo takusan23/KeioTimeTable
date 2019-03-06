@@ -56,16 +56,18 @@ public class ListAdapter extends ArrayAdapter<ListItem> {
 
         //find(ry
         listview_textview = view.findViewById(R.id.listview_layout_textview);
-        listview_textview.setText(text + "\n" + Uri.parse(url).toString());
+        listview_textview.setText(text);
 
 
         //押す
         listview_textview.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getContext(), TimeTableActivity.class);
-                intent.putExtra("URL",url);
-                getContext().startActivity(intent);
+                if (text.length() != 0){
+                    Intent intent = new Intent(getContext(), TimeTableActivity.class);
+                    intent.putExtra("URL",url);
+                    getContext().startActivity(intent);
+                }
             }
         });
 
