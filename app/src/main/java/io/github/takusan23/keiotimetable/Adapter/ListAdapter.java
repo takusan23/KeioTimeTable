@@ -63,7 +63,7 @@ public class ListAdapter extends ArrayAdapter<ListItem> {
         listview_textview.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (text.length() != 0){
+                if (url.length() != 0){
                     Intent intent = new Intent(getContext(), TimeTableActivity.class);
                     intent.putExtra("URL",url);
                     getContext().startActivity(intent);

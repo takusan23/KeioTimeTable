@@ -55,11 +55,11 @@ public class TimeTableActivity extends AppCompatActivity {
         //IDは不明　speed_dial_menu.xmlで作ったのをこっちで使ってるだけ
         speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.up_down_menu, R.drawable.ic_arrow_upward_white_24dp)
                 .setFabBackgroundColor(colorCodeToInt("#001064"))
-                .setLabel("方面 : 新宿方面 → 京王八王子・高尾山口方面")
+                .setLabel("新宿方面 → 京王八王子・高尾山口方面")
                 .create());
         speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.day_menu, R.drawable.ic_work_white_24dp)
                 .setFabBackgroundColor(colorCodeToInt("#ff9e40"))
-                .setLabel("曜日 : 平日 → 土日、休日")
+                .setLabel("平日 → 土日、休日")
                 .create());
         speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.station_add_menu, R.drawable.ic_add_white_24dp)
                 .setFabBackgroundColor(colorCodeToInt("#8e0000"))
@@ -76,29 +76,29 @@ public class TimeTableActivity extends AppCompatActivity {
             public boolean onActionSelected(SpeedDialActionItem actionItem) {
                 switch (actionItem.getId()) {
                     case R.id.up_down_menu:
-                        if (actionItem.getLabel(TimeTableActivity.this).contains("方面 : 新宿方面 → 京王八王子・高尾山口方面")) {
+                        if (actionItem.getLabel(TimeTableActivity.this).contains("新宿方面 → 京王八王子・高尾山口方面")) {
                             //下りURL
                             getHTMLAndPerse(up_url.replace("d=1", "d=2"));
                             //タイトル切り替え
-                            setItemTitleIcon(actionItem, R.id.up_down_menu, "方面 : 京王八王子・高尾山口方面 → 新宿方面", R.drawable.ic_arrow_downward_white_24dp);
+                            setItemTitleIcon(actionItem, R.id.up_down_menu, "京王八王子・高尾山口方面 → 新宿方面", R.drawable.ic_arrow_downward_white_24dp);
                         } else {
                             //URL
                             getHTMLAndPerse(up_url);
                             //タイトル切り替え
-                            setItemTitleIcon(actionItem, R.id.up_down_menu, "方面 : 新宿方面 → 京王八王子・高尾山口方面", R.drawable.ic_arrow_upward_white_24dp);
+                            setItemTitleIcon(actionItem, R.id.up_down_menu, "新宿方面 → 京王八王子・高尾山口方面", R.drawable.ic_arrow_upward_white_24dp);
                         }
                         break;
                     case R.id.day_menu:
-                        if (actionItem.getLabel(TimeTableActivity.this).contains("曜日 : 平日 → 土日、休日")) {
+                        if (actionItem.getLabel(TimeTableActivity.this).contains("平日 → 土日、休日")) {
                             //下りURL
                             getHTMLAndPerse(up_url.replace("dw=0", "dw=1"));
                             //タイトル切り替え
-                            setItemTitleIcon(actionItem, R.id.day_menu, "曜日 : 土日、休日 → 平日", R.drawable.ic_supervisor_account_white_24dp);
+                            setItemTitleIcon(actionItem, R.id.day_menu, "土日、休日 → 平日", R.drawable.ic_supervisor_account_white_24dp);
                         } else {
                             //URL
                             getHTMLAndPerse(up_url);
                             //タイトル切り替え
-                            setItemTitleIcon(actionItem, R.id.day_menu, "曜日 : 平日 → 土日、休日", R.drawable.ic_work_white_24dp);
+                            setItemTitleIcon(actionItem, R.id.day_menu, "平日 → 土日、休日", R.drawable.ic_work_white_24dp);
                         }
 
                 }
