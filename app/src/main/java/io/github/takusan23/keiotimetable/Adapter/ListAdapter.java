@@ -206,6 +206,9 @@ public class ListAdapter extends ArrayAdapter<ListItem> {
         listview_linearlayout.setBackgroundColor(Color.parseColor("#33" + color_code.replace("#", "")));
     }
 
+    /**
+     * いろいろ
+     */
     private void setEndStation(String shortCode, String name) {
         if (listview_textview.getText().toString().contains(shortCode)) {
             listview_textview.setText(listview_textview.getText().toString().replace(shortCode, ""));
