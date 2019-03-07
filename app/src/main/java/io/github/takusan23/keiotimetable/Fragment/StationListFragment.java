@@ -26,7 +26,7 @@ import io.github.takusan23.keiotimetable.R;
 public class StationListFragment extends Fragment {
 
     private ListView station_ListView;
-    private String url =  "https://keio.ekitan.com/pc/T5?dw=0&slCode=";
+    private String url = "https://keio.ekitan.com/pc/T5?dw=0&slCode=";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -47,24 +47,22 @@ public class StationListFragment extends Fragment {
 
         //駅一覧
         String[] a = getResources().getStringArray(R.array.keio_station);
-        //ArrayList化（いる？
-        List<String> station_List = Arrays.asList(a);
-        ArrayList<String> station_ArrayList = new ArrayList<String>(station_List);
-
         //for
         for (int i = 1; i < a.length; i++) {
             //Adapter用List
             ArrayList<String> item = new ArrayList<>();
             item.add("station_list");
             item.add(a[i - 1] + " / KO-" + String.valueOf((i)));
+            item.add(a[i - 1]);
             item.add(urlGenerator(i));
+            item.add("");
+            item.add("");
             ListItem listItem = new ListItem(item);
             adapter.add(listItem);
         }
 
         // ListViewにArrayAdapter
         station_ListView.setAdapter(adapter);
-
 
 
     }
@@ -110,4 +108,9 @@ public class StationListFragment extends Fragment {
         return url;
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        getActivity().setTitle("駅一覧");
+    }
 }

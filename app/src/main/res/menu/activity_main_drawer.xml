@@ -10,17 +10,17 @@
             android:title="駅一覧" />
     </group>
 
-    <item android:title="Communicate">
+    <item
+        android:id="@+id/favourite_title"
+        android:title="お気に入りの駅">
         <menu>
             <item
-                android:id="@+id/nav_share"
-                android:icon="@drawable/ic_menu_share"
-                android:title="Share" />
-            <item
-                android:id="@+id/nav_send"
-                android:icon="@drawable/ic_menu_send"
-                android:title="Send" />
+                android:id="@+id/favourite_clear"
+                android:icon="@drawable/ic_remove_white_24dp"
+                android:title="お気に入りの駅全削除"></item>
+
         </menu>
     </item>
+
 
 </menu>
