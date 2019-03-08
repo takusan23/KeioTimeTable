@@ -13,7 +13,7 @@ public class SQLiteTimeTable extends SQLiteOpenHelper {
     private static final String TABLE_NAME = "stationdb";
     private static final String TITLE = "station";
     private static final String MEMO = "memo";
-    private static final String UP_DOWN = "up";
+    private static final String UP_DOWN = "up_down";
     //URLとか
     private static final String URL = "url";
     private static final String CSS_1 = "css_1";
@@ -40,7 +40,7 @@ public class SQLiteTimeTable extends SQLiteOpenHelper {
             "DROP TABLE IF EXISTS " + TABLE_NAME;
 
 
-    SQLiteTimeTable(Context context) {
+    public SQLiteTimeTable(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
 
     }

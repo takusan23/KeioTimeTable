@@ -1,5 +1,6 @@
 package io.github.takusan23.keiotimetable.Fragment;
 
+import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
@@ -18,6 +19,7 @@ import com.leinardi.android.speeddial.SpeedDialActionItem;
 import com.leinardi.android.speeddial.SpeedDialView;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -25,6 +27,7 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 
 import io.github.takusan23.keiotimetable.Adapter.ListAdapter;
 import io.github.takusan23.keiotimetable.Adapter.ListItem;
@@ -41,9 +44,17 @@ public class TimeTableFragment extends Fragment {
     private ListAdapter adapter;
     private SpeedDialView speedDialView;
     private SharedPreferences pref_setting;
+    private String finalURL;
 
     SQLiteTimeTable helper;
     SQLiteDatabase sqLiteDatabase;
+
+    JSONArray text_ArrayList = new JSONArray();
+    JSONArray url_ArrayList = new JSONArray();
+    JSONArray css_1_ArrayList = new JSONArray();
+    JSONArray css_2_ArrayList = new JSONArray();
+    JSONArray hour_ArrayList = new JSONArray();
+    JSONArray minute_ArrayList = new JSONArray();
 
 
     @Override
@@ -54,7 +65,7 @@ public class TimeTableFragment extends Fragment {
     }
 
     @Override
-    public void onViewCreated(final View view, Bundle savedInstanceState) {
+    public void onViewCreated(final View view, final Bundle savedInstanceState) {
 
         pref_setting = PreferenceManager.getDefaultSharedPreferences(getContext());
 
@@ -63,6 +74,14 @@ public class TimeTableFragment extends Fragment {
 
         up_url = getArguments().getString("URL");
         name = getArguments().getString("name");
+        finalURL = up_url;
+
+        if (helper == null) {
+            helper = new SQLiteTimeTable(getContext());
+        }
+        if (sqLiteDatabase == null) {
+            sqLiteDatabase = helper.getWritableDatabase();
+        }
 
         //SpeedDialとか
         speedDialView.setMainFabClosedBackgroundColor(Color.parseColor("#64c1ff"));
@@ -153,6 +172,7 @@ public class TimeTableFragment extends Fragment {
                         break;
                     case R.id.download_menu:
                         Toast.makeText(getContext(), "ダウンロード開始", Toast.LENGTH_SHORT).show();
+                        saveSQLite(up_url, "up");
                         break;
                 }
 
@@ -191,7 +211,14 @@ public class TimeTableFragment extends Fragment {
     }
 
     private void getHTMLAndPerse(final String url) {
+        finalURL = url;
         adapter.clear();
+        text_ArrayList = new JSONArray();
+        css_1_ArrayList = new JSONArray();
+        css_2_ArrayList = new JSONArray();
+        url_ArrayList = new JSONArray();
+        hour_ArrayList = new JSONArray();
+        minute_ArrayList = new JSONArray();
         setTitleUIThread("🚃🕗読み込み中");
         //サブタイトル設定
         String title = "";
@@ -275,6 +302,16 @@ public class TimeTableFragment extends Fragment {
                                         ListItem listItem = new ListItem(item);
                                         adapter.add(listItem);
                                         listView.setAdapter(adapter);
+
+
+                                        //SQLite準備
+                                        text_ArrayList.put(text);
+                                        css_1_ArrayList.put(css);
+                                        css_2_ArrayList.put(css_2_ArrayList);
+                                        url_ArrayList.put(train_info);
+                                        hour_ArrayList.put(hour);
+                                        minute_ArrayList.put(minute);
+
                                     }
 
                                 }
@@ -295,103 +332,28 @@ public class TimeTableFragment extends Fragment {
 
 
     //SQLite
-    private void saveSQLite(final String url, final String mode, final String station_name) {
+    private void saveSQLite(final String url, final String mode) {
 
-        //ネットワークは非同期処理
-        new AsyncTask<Void, Void, Void>() {
-
+        //DB保存
+        ContentValues values = new ContentValues();
+        values.put("station", TimeTableFragment.this.name);
+        values.put("memo", "");
+        values.put("up_down", mode);
+        values.put("url", "");
+        values.put("css_1", "");
+        values.put("css_2", "");
+        values.put("time", text_ArrayList.toString());
+        values.put("hour", "");
+        values.put("minute", "");
+        sqLiteDatabase.insert("stationdb", null, values);
+        getActivity().runOnUiThread(new Runnable() {
             @Override
-            protected Void doInBackground(Void... aVoid) {
+            public void run() {
+                Toast.makeText(getContext(), "ダウンロード完了", Toast.LENGTH_SHORT).show();
+                //saveSQLite(up_url.replace("d=1", "d=2"),"down");
 
-                try {
-                    //時刻表URL
-                    Document doc = Jsoup.connect(url).get();
-                    //HTML Table
-                    //なんか３個めで行けた
-                    final Element tables = doc.select("table").get(3);
-                    final Elements tr = tables.select("tr");
-                    //タイトル用
-                    setTitleUIThread(tr.get(0).select("td").text());
-
-
-                    String name = station_name;
-                    //上り下り
-                    String up_down = mode;
-                    String memo = "";
-                    final JSONArray text_ArrayList = new JSONArray();
-                    final JSONArray url_ArrayList = new JSONArray();
-                    final JSONArray css_1_ArrayList = new JSONArray();
-                    final JSONArray css_2_ArrayList = new JSONArray();
-                    final JSONArray hour_ArrayList = new JSONArray();
-                    final JSONArray minute_ArrayList = new JSONArray();
-
-                    for (int i = 3; i < tr.size(); i++) {
-                        final int finalI = i;
-                        //Tableの要素
-                        final Elements td = tr.get(finalI).select("td");
-                        //時間取り出し
-                        //Class
-                        //平日　weekday
-                        //休日　holiday
-                        String class_name = "weekday";
-                        if (url.contains("&dw=0")) {
-                            class_name = "weekday";
-                        } else {
-                            class_name = "holiday";
-                        }
-                        final Elements time = tr.get(finalI).getElementsByClass(class_name);
-
-                        //到着取り出し
-                        final Elements time_td = tr.get(finalI).getElementsByClass("jikokuhyo");
-
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-
-                                String hour = "";
-                                String minute = "";
-
-                                //余分にforが回っている
-                                //時刻表最後まで終わったら終了するようにする
-                                if (time.text().length() > 0) {
-                                    hour = time.text() + "時 ";
-                                    //到着
-
-                                    for (int train = 0; train < time_td.size(); train++) {
-
-                                        minute = time_td.get(train).text() + "分";
-                                        //Class(CSS)取得→各駅、区間急行等
-                                        String css = time_td.get(train).select("a").get(0).select("span").get(0).className();
-                                        String css_2nd = time_td.get(train).select("a").get(0).select("span").select("span").get(1).className();
-                                        //電車URL
-                                        String train_info = time_td.get(train).select("a").attr("href");
-                                        //いろいろ
-                                        String text = hour + minute.replace("(", "").replace(")", "");
-
-                                        //SQLite準備
-                                        text_ArrayList.put(text);
-                                        css_1_ArrayList.put(css);
-                                        css_2_ArrayList.put(css_2_ArrayList);
-                                        url_ArrayList.put(train_info);
-                                        hour_ArrayList.put(hour);
-                                        minute_ArrayList.put(minute);
-                                    }
-                                }
-                            }
-                        });
-                    }
-
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-                return null;
             }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-
+        });
     }
-
 
 }

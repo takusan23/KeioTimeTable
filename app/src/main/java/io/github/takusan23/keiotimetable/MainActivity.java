@@ -117,6 +117,8 @@ public class MainActivity extends AppCompatActivity
                     })
                     .setNegativeButton("キャンセル", null)
                     .show();
+        }else if (id==R.id.station_dl_menu){
+            changeFragment(new SQLiteView());
         }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
