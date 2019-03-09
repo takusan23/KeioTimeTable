@@ -46,4 +46,16 @@ public class ArrayListSharedPreferences {
         return arrayList;
     }
 
+    /**
+     * ArrayListをJSONArrayに変換する
+     * @param list ArrayList
+     * */
+    public static JSONArray setArrayListToJSONArray(ArrayList<String> list){
+        JSONArray jsonArray = new JSONArray();
+        for (int i = 0; i < list.size(); i++) {
+            jsonArray.put(list.get(i));
+        }
+        return jsonArray;
+    }
+
 }

@@ -2,6 +2,7 @@ package io.github.takusan23.keiotimetable.Fragment;
 
 import android.content.ContentValues;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -49,13 +50,12 @@ public class TimeTableFragment extends Fragment {
     SQLiteTimeTable helper;
     SQLiteDatabase sqLiteDatabase;
 
-    JSONArray text_ArrayList = new JSONArray();
-    JSONArray url_ArrayList = new JSONArray();
-    JSONArray css_1_ArrayList = new JSONArray();
-    JSONArray css_2_ArrayList = new JSONArray();
-    JSONArray hour_ArrayList = new JSONArray();
-    JSONArray minute_ArrayList = new JSONArray();
-
+    ArrayList<String> text_ArrayList = new ArrayList<>();
+    ArrayList<String> url_ArrayList = new ArrayList<>();
+    ArrayList<String> css_1_ArrayList = new ArrayList<>();
+    ArrayList<String> css_2_ArrayList = new ArrayList<>();
+    ArrayList<String> hour_ArrayList = new ArrayList<>();
+    ArrayList<String> minute_ArrayList = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -172,6 +172,7 @@ public class TimeTableFragment extends Fragment {
                         break;
                     case R.id.download_menu:
                         Toast.makeText(getContext(), "ダウンロード開始", Toast.LENGTH_SHORT).show();
+                        //平日の上り、下りのみ対応させる
                         saveSQLite(up_url, "up");
                         break;
                 }
@@ -213,12 +214,12 @@ public class TimeTableFragment extends Fragment {
     private void getHTMLAndPerse(final String url) {
         finalURL = url;
         adapter.clear();
-        text_ArrayList = new JSONArray();
-        css_1_ArrayList = new JSONArray();
-        css_2_ArrayList = new JSONArray();
-        url_ArrayList = new JSONArray();
-        hour_ArrayList = new JSONArray();
-        minute_ArrayList = new JSONArray();
+        text_ArrayList.clear();
+        css_1_ArrayList.clear();
+        css_2_ArrayList.clear();
+        url_ArrayList.clear();
+        hour_ArrayList.clear();
+        minute_ArrayList.clear();
         setTitleUIThread("🚃🕗読み込み中");
         //サブタイトル設定
         String title = "";
@@ -304,14 +305,6 @@ public class TimeTableFragment extends Fragment {
                                         listView.setAdapter(adapter);
 
 
-                                        //SQLite準備
-                                        text_ArrayList.put(text);
-                                        css_1_ArrayList.put(css);
-                                        css_2_ArrayList.put(css_2_ArrayList);
-                                        url_ArrayList.put(train_info);
-                                        hour_ArrayList.put(hour);
-                                        minute_ArrayList.put(minute);
-
                                     }
 
                                 }
@@ -334,26 +327,119 @@ public class TimeTableFragment extends Fragment {
     //SQLite
     private void saveSQLite(final String url, final String mode) {
 
-        //DB保存
-        ContentValues values = new ContentValues();
-        values.put("station", TimeTableFragment.this.name);
-        values.put("memo", "");
-        values.put("up_down", mode);
-        values.put("url", "");
-        values.put("css_1", "");
-        values.put("css_2", "");
-        values.put("time", text_ArrayList.toString());
-        values.put("hour", "");
-        values.put("minute", "");
-        sqLiteDatabase.insert("stationdb", null, values);
-        getActivity().runOnUiThread(new Runnable() {
+        //ネットワークは非同期処理
+        new AsyncTask<Void, Void, Void>() {
             @Override
-            public void run() {
-                Toast.makeText(getContext(), "ダウンロード完了", Toast.LENGTH_SHORT).show();
-                //saveSQLite(up_url.replace("d=1", "d=2"),"down");
+            protected Void doInBackground(Void... aVoid) {
 
+                try {
+                    //時刻表URL
+                    Document doc = Jsoup.connect(url).get();
+                    //HTML Table
+                    //なんか３個めで行けた
+                    final Element tables = doc.select("table").get(3);
+                    final Elements tr = tables.select("tr");
+                    for (int i = 3; i < tr.size(); i++) {
+                        final int finalI = i;
+                        //Tableの要素
+                        final Elements td = tr.get(finalI).select("td");
+                        //時間取り出し
+                        //Class
+                        //平日　weekday
+                        //休日　holiday
+                        String class_name = "weekday";
+                        if (url.contains("&dw=0")) {
+                            class_name = "weekday";
+                        } else {
+                            class_name = "holiday";
+                        }
+                        final Elements time = tr.get(finalI).getElementsByClass(class_name);
+
+                        //到着取り出し
+                        final Elements time_td = tr.get(finalI).getElementsByClass("jikokuhyo");
+
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+
+                                String hour = "";
+                                String minute = "";
+
+                                //余分にforが回っている
+                                //時刻表最後まで終わったら終了するようにする
+                                if (time.text().length() > 0) {
+                                    hour = time.text() + "時 ";
+                                    //到着
+                                    for (int train = 0; train < time_td.size(); train++) {
+                                        minute = time_td.get(train).text() + "分";
+                                        //Class(CSS)取得→各駅、区間急行等
+                                        String css = time_td.get(train).select("a").get(0).select("span").get(0).className();
+                                        String css_2nd = time_td.get(train).select("a").get(0).select("span").select("span").get(1).className();
+                                        //電車URL
+                                        String train_info = time_td.get(train).select("a").attr("href");
+                                        //いろいろ
+                                        String text = hour + minute.replace("(", "").replace(")", "");
+
+                                        //SQLite準備
+                                        text_ArrayList.add(text);
+                                        css_1_ArrayList.add(css);
+                                        css_2_ArrayList.add(css_2nd);
+                                        url_ArrayList.add(train_info);
+                                        hour_ArrayList.add(hour);
+                                        minute_ArrayList.add(minute);
+
+                                    }
+
+                                }
+                            }
+                        });
+
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
+                return null;
             }
-        });
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                super.onPostExecute(aVoid);
+
+                //ArrayListを変換
+                //DB保存
+                ContentValues values = new ContentValues();
+                values.put("station", TimeTableFragment.this.name + "-" + mode);
+                values.put("memo", "");
+                values.put("up_down", mode);
+                values.put("url", ArrayListSharedPreferences.setArrayListToJSONArray(url_ArrayList).toString());
+                values.put("css_1", ArrayListSharedPreferences.setArrayListToJSONArray(css_1_ArrayList).toString());
+                values.put("css_2", ArrayListSharedPreferences.setArrayListToJSONArray(css_2_ArrayList).toString());
+                values.put("time", ArrayListSharedPreferences.setArrayListToJSONArray(text_ArrayList).toString());
+                values.put("hour", ArrayListSharedPreferences.setArrayListToJSONArray(hour_ArrayList).toString());
+                values.put("minute", ArrayListSharedPreferences.setArrayListToJSONArray(minute_ArrayList).toString());
+
+                //すでにある場合は削除する？
+                sqLiteDatabase.delete("stationdb", "station=?", new String[]{TimeTableFragment.this.name + "-" + mode});
+                //登録
+                sqLiteDatabase.insert("stationdb", null, values);
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mode.contains("up")) {
+                            Toast.makeText(getContext(), "上りダウンロード完了", Toast.LENGTH_SHORT).show();
+                            saveSQLite(up_url.replace("d=1", "d=2"), "down");
+                        } else {
+                            Toast.makeText(getContext(), "下りダウンロード完了", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+
     }
 
 }

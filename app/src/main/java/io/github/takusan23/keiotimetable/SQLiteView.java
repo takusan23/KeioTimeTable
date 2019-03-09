@@ -43,7 +43,7 @@ public class SQLiteView extends Fragment {
         //データ取り出し
         Cursor cursor = sqLiteDatabase.query(
                 "stationdb",
-                new String[]{"station", "memo", "up", "url", "css_1", "css_2", "time", "hour", "minute"},
+                new String[]{"station", "memo", "up_down", "url", "css_1", "css_2", "time", "hour", "minute"},
                 null,
                 null,
                 null,
@@ -55,7 +55,8 @@ public class SQLiteView extends Fragment {
 
         for (int i = 0; i < cursor.getCount(); i++) {
             textView.append(cursor.getString(0) + " / " + cursor.getString(2) + "\n");
-            cursor.moveToFirst();
+            //次の項目へ
+            cursor.moveToNext();
         }
 
         cursor.close();
