@@ -58,6 +58,10 @@ public class TimeTableFragment extends Fragment {
     private ArrayList<String> minute_ArrayList = new ArrayList<>();
 
     private boolean offline_mode = false;
+    //上り？
+    private boolean up_train = true;
+    //休み？
+    private boolean weak_train = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -127,12 +131,24 @@ public class TimeTableFragment extends Fragment {
                     case R.id.up_down_menu:
                         if (actionItem.getLabel(getContext()).contains("新宿方面 → 京王八王子・高尾山口方面")) {
                             //下りURL
-                            getHTMLAndPerse(up_url.replace("d=1", "d=2"));
+                            up_url = up_url.replace("d=1", "d=2");
+                            if (offline_mode) {
+                                loadSQLiteTimeTable("down");
+                            } else {
+                                getHTMLAndPerse(up_url);
+                            }
+                            up_train = false;
                             //タイトル切り替え
                             setItemTitleIcon(actionItem, R.id.up_down_menu, "京王八王子・高尾山口方面 → 新宿方面", R.drawable.ic_arrow_downward_white_24dp);
                         } else {
                             //URL
-                            getHTMLAndPerse(up_url);
+                            up_url = up_url.replace("d=2", "d=1");
+                            if (offline_mode) {
+                                loadSQLiteTimeTable("up");
+                            } else {
+                                getHTMLAndPerse(up_url);
+                            }
+                            up_train = true;
                             //タイトル切り替え
                             setItemTitleIcon(actionItem, R.id.up_down_menu, "新宿方面 → 京王八王子・高尾山口方面", R.drawable.ic_arrow_upward_white_24dp);
                         }
@@ -140,12 +156,32 @@ public class TimeTableFragment extends Fragment {
                     case R.id.day_menu:
                         if (actionItem.getLabel(getContext()).contains("平日 → 土日、休日")) {
                             //下りURL
-                            getHTMLAndPerse(up_url.replace("dw=0", "dw=1"));
+                            up_url = up_url.replace("dw=0", "dw=1");
+                            if (offline_mode) {
+                                //上りの休日
+                                if (up_train) {
+                                    loadSQLiteTimeTable("up_holiday");
+                                } else {
+                                    loadSQLiteTimeTable("down_holiday");
+                                }
+                            } else {
+                                getHTMLAndPerse(up_url);
+                            }
                             //タイトル切り替え
                             setItemTitleIcon(actionItem, R.id.day_menu, "土日、休日 → 平日", R.drawable.ic_supervisor_account_white_24dp);
                         } else {
                             //URL
-                            getHTMLAndPerse(up_url);
+                            up_url = up_url.replace("dw=1", "dw=0");
+                            if (offline_mode) {
+                                //上りの休日
+                                if (up_train) {
+                                    loadSQLiteTimeTable("up");
+                                } else {
+                                    loadSQLiteTimeTable("down");
+                                }
+                            } else {
+                                getHTMLAndPerse(up_url);
+                            }
                             //タイトル切り替え
                             setItemTitleIcon(actionItem, R.id.day_menu, "平日 → 土日、休日", R.drawable.ic_work_white_24dp);
                         }
@@ -190,10 +226,12 @@ public class TimeTableFragment extends Fragment {
         //データ取得
         if (checkSQLiteTimeTableData(this.name) != 0) {
             offline_mode = true;
+            up_train = true;
             loadSQLiteTimeTable("up");
             setDownloadSpeedDial();
         } else {
             getHTMLAndPerse(up_url);
+            up_train = true;
         }
 
     }
@@ -423,7 +461,7 @@ public class TimeTableFragment extends Fragment {
             }
 
             @Override
-            protected void onPostExecute(Void aVoid) {
+            protected void onPostExecute(final Void aVoid) {
                 super.onPostExecute(aVoid);
 
                 //ArrayListを変換
@@ -446,11 +484,25 @@ public class TimeTableFragment extends Fragment {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if (mode.contains("up")) {
+                        if (mode.contains("up") && !mode.contains("up_holiday")) {
                             Toast.makeText(getContext(), "上りダウンロード完了", Toast.LENGTH_SHORT).show();
                             saveSQLite(up_url.replace("d=1", "d=2"), "down");
-                        } else {
+                        }
+                        if (mode.contains("down") && !mode.contains("down_holiday")) {
                             Toast.makeText(getContext(), "下りダウンロード完了", Toast.LENGTH_SHORT).show();
+                            up_url = up_url.replace("dw=0", "dw=1");
+                            up_url = up_url.replace("d=2", "d=1");
+                            saveSQLite(up_url, "up_holiday");
+                        }
+                        if (mode.contains("up_holiday")) {
+                            Toast.makeText(getContext(), "休日上りダウンロード完了", Toast.LENGTH_SHORT).show();
+                            up_url = up_url.replace("dw=0", "dw=1");
+                            up_url = up_url.replace("d=1", "d=2");
+                            saveSQLite(up_url, "down_holiday");
+                        }
+                        if (mode.contains("down_holiday")) {
+                            Toast.makeText(getContext(), "休日下りダウンロード完了", Toast.LENGTH_SHORT).show();
+                            up_url = getArguments().getString("URL");
                         }
                     }
                 });
@@ -491,9 +543,13 @@ public class TimeTableFragment extends Fragment {
                     } else {
                         up_down = "京王八王子・高尾山口方面";
                     }
-                    setSubTitleUIThread("方面 : " + up_down + " / " + "曜日 : " + "平日");
+                    if (cursor.getString(0).contains("holiday")) {
+                        setSubTitleUIThread("方面 : " + up_down + " / " + "曜日 : " + "休日");
+                    } else {
+                        setSubTitleUIThread("方面 : " + up_down + " / " + "曜日 : " + "平日");
+                    }
                     String str = ("-" + mode);
-                    setTitleUIThread(cursor.getString(0).replace(str, ""));
+                    setTitleUIThread(cursor.getString(0).replace(str, "") + " (ダウンロードデータ)");
 
                     try {
                         JSONArray text_JsonArray = new JSONArray(cursor.getString(6));
@@ -509,8 +565,14 @@ public class TimeTableFragment extends Fragment {
                             item.add("https://keio.ekitan.com/sp/" + url_JsonArray.get(json_count));
                             item.add((String) css_1_JsonArray.get(json_count));
                             item.add((String) css_2_JsonArray.get(json_count));
-                            ListItem listItem = new ListItem(item);
-                            adapter.add(listItem);
+                            final ListItem listItem = new ListItem(item);
+                            //UIスレッド限定な模様
+                            getActivity().runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    adapter.add(listItem);
+                                }
+                            });
                         }
 
                     } catch (JSONException e) {
@@ -579,7 +641,7 @@ public class TimeTableFragment extends Fragment {
                 .create()).setOnActionSelectedListener(new SpeedDialView.OnActionSelectedListener() {
             @Override
             public boolean onActionSelected(SpeedDialActionItem actionItem) {
-                saveSQLite(up_url,"up");
+                saveSQLite(up_url, "up");
                 return false;
             }
         });
@@ -603,6 +665,8 @@ public class TimeTableFragment extends Fragment {
             public boolean onActionSelected(SpeedDialActionItem actionItem) {
                 sqLiteDatabase.delete("stationdb", "station=?", new String[]{TimeTableFragment.this.name + "-" + "up"});
                 sqLiteDatabase.delete("stationdb", "station=?", new String[]{TimeTableFragment.this.name + "-" + "down"});
+                sqLiteDatabase.delete("stationdb", "station=?", new String[]{TimeTableFragment.this.name + "-" + "up_holiday"});
+                sqLiteDatabase.delete("stationdb", "station=?", new String[]{TimeTableFragment.this.name + "-" + "down_holiday"});
                 return false;
             }
         });
