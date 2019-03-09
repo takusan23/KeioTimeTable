@@ -1,14 +1,22 @@
 package io.github.takusan23.keiotimetable;
 
+import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -57,6 +65,7 @@ public class MainActivity extends AppCompatActivity
         transaction.commit();
 
     }
+
 
     @Override
     public void onBackPressed() {
@@ -107,17 +116,17 @@ public class MainActivity extends AppCompatActivity
                     .setPositiveButton("削除", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            ArrayListSharedPreferences.saveArrayListSharedPreferences(new ArrayList<String>(),"favourite_name",pref_setting);
-                            ArrayListSharedPreferences.saveArrayListSharedPreferences(new ArrayList<String>(),"favourite_url",pref_setting);
+                            ArrayListSharedPreferences.saveArrayListSharedPreferences(new ArrayList<String>(), "favourite_name", pref_setting);
+                            ArrayListSharedPreferences.saveArrayListSharedPreferences(new ArrayList<String>(), "favourite_url", pref_setting);
                             NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
                             navigationView.getMenu().clear();
                             navigationView.inflateMenu(R.menu.activity_main_drawer);
-                            Toast.makeText(MainActivity.this,"削除しました",Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, "削除しました", Toast.LENGTH_SHORT).show();
                         }
                     })
                     .setNegativeButton("キャンセル", null)
                     .show();
-        }else if (id==R.id.station_dl_menu){
+        } else if (id == R.id.station_dl_menu) {
             changeFragment(new SQLiteView());
         }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -133,11 +142,11 @@ public class MainActivity extends AppCompatActivity
     }
 
     //フラグメント２
-    private void changeTimeTableFragment(String name,String url){
+    private void changeTimeTableFragment(String name, String url) {
         //URL と 名前
         Bundle bundle = new Bundle();
-        bundle.putString("URL",url);
-        bundle.putString("name",name);
+        bundle.putString("URL", url);
+        bundle.putString("name", name);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         TimeTableFragment timeTableFragment = new TimeTableFragment();
         timeTableFragment.setArguments(bundle);
@@ -161,7 +170,7 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public boolean onMenuItemClick(MenuItem item) {
                     //Fragment
-                    changeTimeTableFragment(name.get(finalI),url.get(finalI));
+                    changeTimeTableFragment(name.get(finalI), url.get(finalI));
                     return false;
                 }
             });

@@ -270,12 +270,6 @@ public class TimeTableFragment extends Fragment {
     private void getHTMLAndPerse(final String url) {
         finalURL = url;
         adapter.clear();
-        text_ArrayList.clear();
-        css_1_ArrayList.clear();
-        css_2_ArrayList.clear();
-        url_ArrayList.clear();
-        hour_ArrayList.clear();
-        minute_ArrayList.clear();
         setTitleUIThread("🚃🕗読み込み中");
         //サブタイトル設定
         String title = "";
@@ -458,6 +452,8 @@ public class TimeTableFragment extends Fragment {
                     }
 
                 } catch (IOException e) {
+                    e.printStackTrace();
+                }catch (IndexOutOfBoundsException e){
                     e.printStackTrace();
                 }
 

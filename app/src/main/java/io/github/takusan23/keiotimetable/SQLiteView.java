@@ -32,6 +32,8 @@ public class SQLiteView extends Fragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         textView = view.findViewById(R.id.sqlite_tv);
 
+        getActivity().setTitle("ダウンロード一覧");
+
         //DB
         if (helper == null) {
             helper = new SQLiteTimeTable(getContext());
