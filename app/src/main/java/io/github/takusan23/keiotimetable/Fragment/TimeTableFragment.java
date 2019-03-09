@@ -47,15 +47,17 @@ public class TimeTableFragment extends Fragment {
     private SharedPreferences pref_setting;
     private String finalURL;
 
-    SQLiteTimeTable helper;
-    SQLiteDatabase sqLiteDatabase;
+    private SQLiteTimeTable helper;
+    private SQLiteDatabase sqLiteDatabase;
 
-    ArrayList<String> text_ArrayList = new ArrayList<>();
-    ArrayList<String> url_ArrayList = new ArrayList<>();
-    ArrayList<String> css_1_ArrayList = new ArrayList<>();
-    ArrayList<String> css_2_ArrayList = new ArrayList<>();
-    ArrayList<String> hour_ArrayList = new ArrayList<>();
-    ArrayList<String> minute_ArrayList = new ArrayList<>();
+    private ArrayList<String> text_ArrayList = new ArrayList<>();
+    private ArrayList<String> url_ArrayList = new ArrayList<>();
+    private ArrayList<String> css_1_ArrayList = new ArrayList<>();
+    private ArrayList<String> css_2_ArrayList = new ArrayList<>();
+    private ArrayList<String> hour_ArrayList = new ArrayList<>();
+    private ArrayList<String> minute_ArrayList = new ArrayList<>();
+
+    private boolean offline_mode = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -185,7 +187,14 @@ public class TimeTableFragment extends Fragment {
         arrayList = new ArrayList<>();
         adapter = new ListAdapter(getContext(), R.layout.listview_layout, arrayList);
 
-        getHTMLAndPerse(up_url);
+        //データ取得
+        if (checkSQLiteTimeTableData(this.name) != 0) {
+            offline_mode = true;
+            loadSQLiteTimeTable("up");
+            setDownloadSpeedDial();
+        } else {
+            getHTMLAndPerse(up_url);
+        }
 
     }
 
@@ -194,6 +203,15 @@ public class TimeTableFragment extends Fragment {
             @Override
             public void run() {
                 ((AppCompatActivity) getActivity()).getSupportActionBar().setTitle(message);
+            }
+        });
+    }
+
+    private void setSubTitleUIThread(final String message) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(message);
             }
         });
     }
@@ -438,8 +456,156 @@ public class TimeTableFragment extends Fragment {
                 });
             }
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
 
 
+    /**
+     * SQLiteからデータを読み込む
+     */
+    private void loadSQLiteTimeTable(final String mode) {
+        adapter.clear();
+        new AsyncTask<Void, Void, Void>() {
+
+            @Override
+            protected Void doInBackground(Void... aVoid) {
+                //データベース表示
+                //データ取り出し
+                Cursor cursor = sqLiteDatabase.query(
+                        "stationdb",
+                        new String[]{"station", "memo", "up_down", "url", "css_1", "css_2", "time", "hour", "minute"},
+                        "station=?",
+                        new String[]{TimeTableFragment.this.name + "-" + mode},
+                        null,
+                        null,
+                        null
+                );
+                //はじめに移動
+                cursor.moveToFirst();
+
+                //取り出し
+                for (int i = 0; i < cursor.getCount(); i++) {
+                    //のぼり・くだり
+                    String up_down = "";
+                    if (cursor.getString(2).contains("up")) {
+                        up_down = "新宿方面";
+                    } else {
+                        up_down = "京王八王子・高尾山口方面";
+                    }
+                    setSubTitleUIThread("方面 : " + up_down + " / " + "曜日 : " + "平日");
+                    String str = ("-" + mode);
+                    setTitleUIThread(cursor.getString(0).replace(str, ""));
+
+                    try {
+                        JSONArray text_JsonArray = new JSONArray(cursor.getString(6));
+                        JSONArray url_JsonArray = new JSONArray(cursor.getString(3));
+                        JSONArray css_1_JsonArray = new JSONArray(cursor.getString(4));
+                        JSONArray css_2_JsonArray = new JSONArray(cursor.getString(5));
+
+                        for (int json_count = 0; json_count < text_JsonArray.length(); json_count++) {
+                            ArrayList<String> item = new ArrayList<>();
+                            item.add("time_table_list");
+                            item.add((String) text_JsonArray.get(json_count));
+                            item.add("");
+                            item.add("https://keio.ekitan.com/sp/" + url_JsonArray.get(json_count));
+                            item.add((String) css_1_JsonArray.get(json_count));
+                            item.add((String) css_2_JsonArray.get(json_count));
+                            ListItem listItem = new ListItem(item);
+                            adapter.add(listItem);
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+
+                    //次の項目へ
+                    cursor.moveToNext();
+                }
+
+                //最後
+                cursor.close();
+
+
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                Toast.makeText(getContext(), "ダウンロード済みのデータを表示中です", Toast.LENGTH_SHORT).show();
+                listView.setAdapter(adapter);
+                super.onPostExecute(aVoid);
+            }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
+     * SQLiteに駅の時刻表データがあるか確認
+     *
+     * @return 0か1を返します。0のときは無く、1のときは有る状態です
+     */
+    private int checkSQLiteTimeTableData(String name) {
+        int return_int = 0;
+        //データ取り出し
+        Cursor cursor = sqLiteDatabase.query(
+                "stationdb",
+                new String[]{"station", "memo", "up_down", "url", "css_1", "css_2", "time", "hour", "minute"},
+                "station=?",
+                new String[]{TimeTableFragment.this.name + "-up"},
+                null,
+                null,
+                null
+        );
+        //はじめに移動
+        cursor.moveToFirst();
+        //取り出し
+        for (int i = 0; i < cursor.getCount(); i++) {
+            //確認
+            if (cursor.getString(0).contains(name)) {
+                return_int = 1;
+            }
+            //次の項目へ
+            cursor.moveToNext();
+        }
+        //最後
+        cursor.close();
+        return return_int;
+    }
+
+    //SpeedDialのメッセージ変更
+    private void setDownloadSpeedDial() {
+        speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.download_menu, R.drawable.ic_autorenew_white_24dp)
+                .setFabBackgroundColor(colorCodeToInt("#005005"))
+                .setLabel("データ更新")
+                .create()).setOnActionSelectedListener(new SpeedDialView.OnActionSelectedListener() {
+            @Override
+            public boolean onActionSelected(SpeedDialActionItem actionItem) {
+                saveSQLite(up_url,"up");
+                return false;
+            }
+        });
+
+        speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.online_menu, R.drawable.ic_language_while_24dp)
+                .setFabBackgroundColor(colorCodeToInt("#1b0000"))
+                .setLabel("ウェブから取得")
+                .create()).setOnActionSelectedListener(new SpeedDialView.OnActionSelectedListener() {
+            @Override
+            public boolean onActionSelected(SpeedDialActionItem actionItem) {
+                getHTMLAndPerse(up_url);
+                return false;
+            }
+        });
+
+        speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.download_delete_menu, R.drawable.ic_delete_white_24dp)
+                .setFabBackgroundColor(colorCodeToInt("#000a12"))
+                .setLabel("DLデータ削除")
+                .create()).setOnActionSelectedListener(new SpeedDialView.OnActionSelectedListener() {
+            @Override
+            public boolean onActionSelected(SpeedDialActionItem actionItem) {
+                sqLiteDatabase.delete("stationdb", "station=?", new String[]{TimeTableFragment.this.name + "-" + "up"});
+                sqLiteDatabase.delete("stationdb", "station=?", new String[]{TimeTableFragment.this.name + "-" + "down"});
+                return false;
+            }
+        });
     }
 
 }

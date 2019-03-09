@@ -11,4 +11,11 @@
     <item
         android:id="@+id/download_menu"
         android:title=""></item>
+    <item
+        android:id="@+id/online_menu"
+        android:title=""></item>
+    <item
+        android:id="@+id/download_delete_menu"
+        android:title=""></item>
+
 </menu>
