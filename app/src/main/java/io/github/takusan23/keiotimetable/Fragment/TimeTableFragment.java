@@ -211,7 +211,7 @@ public class TimeTableFragment extends Fragment {
                     case R.id.download_menu:
                         Toast.makeText(getContext(), "ダウンロード開始", Toast.LENGTH_SHORT).show();
                         //平日の上り、下りのみ対応させる
-                        saveSQLite(up_url, "up");
+                        saveSQLite(getArguments().getString("URL"), "up");
                         break;
                 }
 
@@ -382,7 +382,12 @@ public class TimeTableFragment extends Fragment {
 
     //SQLite
     private void saveSQLite(final String url, final String mode) {
-
+        text_ArrayList.clear();
+        url_ArrayList.clear();
+        css_1_ArrayList.clear();
+        css_2_ArrayList.clear();
+        hour_ArrayList.clear();
+        minute_ArrayList.clear();
         //ネットワークは非同期処理
         new AsyncTask<Void, Void, Void>() {
             @Override
@@ -486,23 +491,24 @@ public class TimeTableFragment extends Fragment {
                     public void run() {
                         if (mode.contains("up") && !mode.contains("up_holiday")) {
                             Toast.makeText(getContext(), "上りダウンロード完了", Toast.LENGTH_SHORT).show();
-                            saveSQLite(up_url.replace("d=1", "d=2"), "down");
+                            saveSQLite(getArguments().getString("URL").replace("d=1", "d=2"), "down");
                         }
                         if (mode.contains("down") && !mode.contains("down_holiday")) {
                             Toast.makeText(getContext(), "下りダウンロード完了", Toast.LENGTH_SHORT).show();
-                            up_url = up_url.replace("dw=0", "dw=1");
-                            up_url = up_url.replace("d=2", "d=1");
-                            saveSQLite(up_url, "up_holiday");
+                            String getURL = getArguments().getString("URL");
+                            getURL = getURL.replace("dw=0", "dw=1");
+                            getURL = getURL.replace("d=2", "d=1");
+                            saveSQLite(getURL, "up_holiday");
                         }
                         if (mode.contains("up_holiday")) {
                             Toast.makeText(getContext(), "休日上りダウンロード完了", Toast.LENGTH_SHORT).show();
-                            up_url = up_url.replace("dw=0", "dw=1");
-                            up_url = up_url.replace("d=1", "d=2");
-                            saveSQLite(up_url, "down_holiday");
+                            String getURL = getArguments().getString("URL");
+                            getURL = getURL.replace("dw=0", "dw=1");
+                            getURL = getURL.replace("d=1", "d=2");
+                            saveSQLite(getURL, "down_holiday");
                         }
                         if (mode.contains("down_holiday")) {
                             Toast.makeText(getContext(), "休日下りダウンロード完了", Toast.LENGTH_SHORT).show();
-                            up_url = getArguments().getString("URL");
                         }
                     }
                 });
