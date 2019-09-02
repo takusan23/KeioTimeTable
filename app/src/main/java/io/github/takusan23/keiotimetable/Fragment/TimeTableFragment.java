@@ -1,15 +1,20 @@
 package io.github.takusan23.keiotimetable.Fragment;
 
+import android.app.LauncherActivity;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,17 +33,20 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.ConcurrentModificationException;
 
 import io.github.takusan23.keiotimetable.Adapter.ListAdapter;
 import io.github.takusan23.keiotimetable.Adapter.ListItem;
 import io.github.takusan23.keiotimetable.R;
+import io.github.takusan23.keiotimetable.TimeTableActivity;
 import io.github.takusan23.keiotimetable.Utilities.ArrayListSharedPreferences;
 import io.github.takusan23.keiotimetable.SQLiteTimeTable;
 
 public class TimeTableFragment extends Fragment {
 
     private ListView listView;
+    private TabLayout tablayout;
     private String up_url;
     private String name;
     private ArrayList<ListItem> arrayList;
@@ -63,6 +71,11 @@ public class TimeTableFragment extends Fragment {
     //休み？
     private boolean weak_train = false;
 
+    //時間だけのリスト
+    private ArrayList<String> hourList = new ArrayList<String>();
+    //その他の
+    private ArrayList<String> textList = new ArrayList<>();
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -77,6 +90,7 @@ public class TimeTableFragment extends Fragment {
 
         listView = view.findViewById(R.id.time_table_listview);
         speedDialView = view.findViewById(R.id.speedDial);
+        tablayout = view.findViewById(R.id.timetable_tablayout);
 
         up_url = getArguments().getString("URL");
         name = getArguments().getString("name");
@@ -88,6 +102,35 @@ public class TimeTableFragment extends Fragment {
         if (sqLiteDatabase == null) {
             sqLiteDatabase = helper.getWritableDatabase();
         }
+
+
+        //TabLayoutを選んだときとか
+        tablayout.addOnTabSelectedListener(new TabLayout.BaseOnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                //時刻表の時刻が選べるように
+                ArrayList<ListItem> timelineItemList = new ArrayList<>();
+                for (int i = 0; i < hourList.size(); i++) {
+                    String text = hourList.get(i).trim();
+                    if (text.equals(tab.getText().toString())) {
+                        timelineItemList.add(adapter.getItem(i));
+                    }
+                }
+                ListAdapter tmpAadapter = new ListAdapter(getContext(), R.layout.listview_layout, timelineItemList);
+                listView.setAdapter(tmpAadapter);
+                tmpAadapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
 
         //SpeedDialとか
         speedDialView.setMainFabClosedBackgroundColor(Color.parseColor("#64c1ff"));
@@ -234,6 +277,23 @@ public class TimeTableFragment extends Fragment {
             up_train = true;
         }
 
+        listView.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                //２回送ってくる
+                if (event.getAction() == KeyEvent.ACTION_DOWN){
+                    //選択ボタン投下時
+                    if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER){
+                        Fragment fragment = getActivity().getSupportFragmentManager().findFragmentById(R.id.activity_time_table_linearlayout);
+                        if(fragment instanceof TimeTableFragment){
+                            ((TimeTableFragment) fragment).okKeyDown();
+                        }
+                    }
+                }
+                return false;
+            }
+        });
+
     }
 
     private void setTitleUIThread(final String message) {
@@ -333,6 +393,7 @@ public class TimeTableFragment extends Fragment {
                                     hour = time.text() + "時 ";
                                     //到着
                                     for (int train = 0; train < time_td.size(); train++) {
+                                        hourList.add(hour);
                                         minute = time_td.get(train).text() + "分";
                                         //Class(CSS)取得→各駅、区間急行等
                                         String css = time_td.get(train).select("a").get(0).select("span").get(0).className();
@@ -352,11 +413,28 @@ public class TimeTableFragment extends Fragment {
                                         item.add(css_2nd);
                                         ListItem listItem = new ListItem(item);
                                         adapter.add(listItem);
-                                        listView.setAdapter(adapter);
-
-
+                                        //listView.setAdapter(adapter);
                                     }
-
+                                }
+                                //今の時間の時刻表を出す
+                                Calendar calendar = Calendar.getInstance();
+                                int nowHour = calendar.get(Calendar.HOUR_OF_DAY);
+                                if (nowHour >= 4) {
+                                    //時刻表の時刻が選べるように
+                                    ArrayList<ListItem> timelineItemList = new ArrayList<>();
+                                    for (int i = 0; i < hourList.size(); i++) {
+                                        String text = hourList.get(i).trim();
+                                        if (text.equals(String.valueOf(nowHour) + "時")) {
+                                            timelineItemList.add(adapter.getItem(i));
+                                        }
+                                    }
+                                    ListAdapter tmpAadapter = new ListAdapter(getContext(), R.layout.listview_layout, timelineItemList);
+                                    listView.setAdapter(tmpAadapter);
+                                    tmpAadapter.notifyDataSetChanged();
+                                    //TabLayoutのItemのいち
+                                    tablayout.getTabAt(nowHour - 4).select();
+                                } else {
+                                    listView.setAdapter(adapter);
                                 }
                             }
                         });
@@ -442,7 +520,6 @@ public class TimeTableFragment extends Fragment {
                                         url_ArrayList.add(train_info);
                                         hour_ArrayList.add(hour);
                                         minute_ArrayList.add(minute);
-
                                     }
 
                                 }
@@ -453,7 +530,7 @@ public class TimeTableFragment extends Fragment {
 
                 } catch (IOException e) {
                     e.printStackTrace();
-                }catch (IndexOutOfBoundsException e){
+                } catch (IndexOutOfBoundsException e) {
                     e.printStackTrace();
                 }
 
@@ -558,8 +635,9 @@ public class TimeTableFragment extends Fragment {
                         JSONArray url_JsonArray = new JSONArray(cursor.getString(3));
                         JSONArray css_1_JsonArray = new JSONArray(cursor.getString(4));
                         JSONArray css_2_JsonArray = new JSONArray(cursor.getString(5));
-
+                        JSONArray hour_JSONArray = new JSONArray(cursor.getString(7));
                         for (int json_count = 0; json_count < text_JsonArray.length(); json_count++) {
+                            hourList.add(hour_JSONArray.getString(json_count));
                             ArrayList<String> item = new ArrayList<>();
                             item.add("time_table_list");
                             item.add((String) text_JsonArray.get(json_count));
@@ -576,7 +654,6 @@ public class TimeTableFragment extends Fragment {
                                 }
                             });
                         }
-
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -673,5 +750,14 @@ public class TimeTableFragment extends Fragment {
             }
         });
     }
+
+    public void okKeyDown() {
+        //決定ボタン押したとき
+        int pos = listView.getSelectedItemPosition();
+        ArrayList<String> item = adapter.getItem(pos).getList();
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(item.get(3)));
+        startActivity(intent);
+    }
+
 
 }

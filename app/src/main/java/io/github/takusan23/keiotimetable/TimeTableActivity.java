@@ -5,9 +5,11 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.widget.ListView;
 
 import com.leinardi.android.speeddial.SpeedDialActionItem;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 
 import io.github.takusan23.keiotimetable.Adapter.ListAdapter;
 import io.github.takusan23.keiotimetable.Adapter.ListItem;
+import io.github.takusan23.keiotimetable.Fragment.StationListFragment;
 import io.github.takusan23.keiotimetable.Fragment.TimeTableFragment;
 import io.github.takusan23.keiotimetable.Utilities.ArrayListSharedPreferences;
 
@@ -57,8 +60,6 @@ public class TimeTableActivity extends AppCompatActivity {
         transaction.commit();
 
     }
-
-
 }
 
 

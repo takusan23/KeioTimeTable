@@ -81,7 +81,6 @@ public class ListAdapter extends ArrayAdapter<ListItem> {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                         getContext().startActivity(intent);
                     }
-
                 }
             }
         });

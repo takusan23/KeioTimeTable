@@ -1,11 +1,14 @@
 package io.github.takusan23.keiotimetable.Fragment;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.view.menu.MenuPopupHelper;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -22,11 +25,13 @@ import java.util.List;
 import io.github.takusan23.keiotimetable.Adapter.ListAdapter;
 import io.github.takusan23.keiotimetable.Adapter.ListItem;
 import io.github.takusan23.keiotimetable.R;
+import io.github.takusan23.keiotimetable.TimeTableActivity;
 
 public class StationListFragment extends Fragment {
 
     private ListView station_ListView;
     private String url = "https://keio.ekitan.com/pc/T5?dw=0&slCode=";
+   private ListAdapter adapter;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -43,7 +48,7 @@ public class StationListFragment extends Fragment {
 
         //ListView
         ArrayList<ListItem> arrayList = new ArrayList<>();
-        final ListAdapter adapter = new ListAdapter(getContext(), R.layout.listview_layout, arrayList);
+        adapter = new ListAdapter(getContext(), R.layout.listview_layout, arrayList);
 
         //駅一覧
         String[] a = getResources().getStringArray(R.array.keio_station);
@@ -64,6 +69,22 @@ public class StationListFragment extends Fragment {
         // ListViewにArrayAdapter
         station_ListView.setAdapter(adapter);
 
+        station_ListView.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                //２回送ってくる
+                if (event.getAction() == KeyEvent.ACTION_DOWN){
+                    //選択ボタン投下時
+                    if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER){
+                        Fragment fragment = getActivity().getSupportFragmentManager().findFragmentById(R.id.home_fragment);
+                        if (fragment instanceof StationListFragment){
+                            ((StationListFragment) fragment).okKeyDown();
+                        }
+                    }
+                }
+                return false;
+            }
+        });
 
     }
 
@@ -113,4 +134,16 @@ public class StationListFragment extends Fragment {
         super.onPause();
         getActivity().setTitle("駅一覧");
     }
+
+    public void okKeyDown() {
+        //決定ボタン押したとき
+        int pos = station_ListView.getSelectedItemPosition();
+
+        ArrayList<String> item = adapter.getItem(pos).getList();
+        Intent intent = new Intent(getContext(), TimeTableActivity.class);
+        intent.putExtra("URL", item.get(3));
+        intent.putExtra("name", item.get(2));
+        startActivity(intent);
+    }
+
 }
